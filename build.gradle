@@ -1,11 +1,16 @@
 buildscript {
 	repositories {
-		maven { url "https://repo.spring.io/plugins-release" }
-	}
+        mavenCentral()
+        mavenLocal()
+        jcenter()
+        maven {
+          url 'https://repo.spring.io/plugins-snapshot'
+        }
+    }
 	dependencies {
-		classpath("org.springframework.build.gradle:propdeps-plugin:0.0.7")
+		classpath("org.springframework.build.gradle:propdeps-plugin:0.0.7-SNAPSHOT")
 		classpath("org.asciidoctor:asciidoctor-gradle-plugin:1.5.2")
-		classpath("io.spring.gradle:docbook-reference-plugin:0.3.1")
+		classpath("io.spring.gradle:docbook-reference-plugin:0.3.1-SNAPSHOT")
 		classpath("ws.antonov.gradle.plugins:gradle-plugin-protobuf:0.9.1")
 	}
 }
@@ -133,6 +138,9 @@ configure(allprojects) { project ->
 	}
 
 	repositories {
+        mavenCentral()
+        mavenLocal()
+        jcenter()
 		maven { url "https://repo.spring.io/libs-release" }
 	}
 
@@ -261,16 +269,6 @@ configure(subprojects - project(":spring-build-src")) { subproject ->
 		classifier = 'sources'
 		from sourceSets.main.allSource
 		// Don't include or exclude anything explicitly by default. See SPR-12085.
-	}
-
-	task javadocJar(type: Jar) {
-		classifier = "javadoc"
-		from javadoc
-	}
-
-	artifacts {
-		archives sourcesJar
-		archives javadocJar
 	}
 }
 
@@ -1203,65 +1201,6 @@ configure(rootProject) {
 		testCompile("org.hsqldb:hsqldb:${hsqldbVersion}")
 	}
 
-	task api(type: Javadoc) {
-		group = "Documentation"
-		description = "Generates aggregated Javadoc API documentation."
-		title = "${rootProject.description} ${version} API"
-
-		dependsOn {
-			subprojects.collect {
-				it.tasks.getByName("jar")
-			}
-		}
-		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-		options.author = true
-		options.header = rootProject.description
-		options.overview = "src/api/overview.html"
-		options.stylesheetFile = file("src/api/stylesheet.css")
-		options.splitIndex = true
-		options.links(project.ext.javadocLinks)
-		options.addStringOption('Xdoclint:none', '-quiet')
-
-		source subprojects.collect { project ->
-			project.sourceSets.main.allJava
-		}
-
-		maxMemory = "1024m"
-		destinationDir = new File(buildDir, "api")
-
-		doFirst {
-			classpath = files(
-				// Ensure Servlet 3.x and Hibernate 4.x have precedence on the javadoc
-				// classpath over their respective 2.5 and 3.x variants
-				project(":spring-webmvc").sourceSets.main.compileClasspath.files.find { it =~ "servlet-api" },
-				rootProject.sourceSets.test.compileClasspath.files.find { it =~ "hibernate-core" },
-				// Ensure the javadoc process can resolve types compiled from .aj sources
-				project(":spring-aspects").sourceSets.main.output
-			)
-			classpath += files(subprojects.collect { it.sourceSets.main.compileClasspath })
-		}
-	}
-
-	task docsZip(type: Zip, dependsOn: 'reference') {
-		group = "Distribution"
-		baseName = "spring-framework"
-		classifier = "docs"
-		description = "Builds -${classifier} archive containing api and reference " +
-			"for deployment at https://docs.spring.io/spring-framework/docs."
-
-		from("src/dist") {
-			include "changelog.txt"
-		}
-
-		from (api) {
-			into "javadoc-api"
-		}
-
-		from (reference) {
-			into "spring-framework-reference"
-		}
-	}
-
 	task schemaZip(type: Zip) {
 		group = "Distribution"
 		baseName = "spring-framework"
@@ -1290,7 +1229,7 @@ configure(rootProject) {
 		}
 	}
 
-	task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
+	task distZip(type: Zip, dependsOn: [schemaZip]) {
 		group = "Distribution"
 		baseName = "spring-framework"
 		classifier = "dist"
@@ -1307,10 +1246,6 @@ configure(rootProject) {
 			expand(copyright: new Date().format("yyyy"), version: project.version)
 		}
 
-		from(zipTree(docsZip.archivePath)) {
-			into "${baseDir}/docs"
-		}
-
 		from(zipTree(schemaZip.archivePath)) {
 			into "${baseDir}/schema"
 		}
@@ -1320,9 +1255,6 @@ configure(rootProject) {
 				from subproject.jar
 				if (subproject.tasks.findByPath("sourcesJar")) {
 					from subproject.sourcesJar
-				}
-				if (subproject.tasks.findByPath("javadocJar")) {
-					from subproject.javadocJar
 				}
 			}
 		}
@@ -1361,7 +1293,6 @@ configure(rootProject) {
 	}
 
 	artifacts {
-		archives docsZip
 		archives schemaZip
 		archives distZip
 	}

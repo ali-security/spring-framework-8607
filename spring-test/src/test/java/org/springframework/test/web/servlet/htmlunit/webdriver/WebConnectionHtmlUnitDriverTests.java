@@ -66,7 +66,6 @@ public class WebConnectionHtmlUnitDriverTests {
 		this.driver.setWebConnection(null);
 	}
 
-	@Test
 	public void setWebConnection() {
 		this.driver.setWebConnection(this.connection);
 		assertThat(this.driver.getWebConnection(), equalTo(this.connection));

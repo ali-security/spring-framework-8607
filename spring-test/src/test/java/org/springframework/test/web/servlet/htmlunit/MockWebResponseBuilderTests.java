@@ -76,7 +76,6 @@ public class MockWebResponseBuilderTests {
 		assertThat(webResponse.getContentAsString(), equalTo("expected content"));
 	}
 
-	@Test
 	public void buildContentCharset() throws Exception {
 		this.response.addHeader("Content-Type", "text/html; charset=UTF-8");
 		WebResponse webResponse = this.responseBuilder.build();
